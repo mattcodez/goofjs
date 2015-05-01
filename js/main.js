@@ -7,12 +7,14 @@ $('#compute').on('click', function(e){
   ); //TODO: Can we pipe this at some point?
 });
 
-function compute(source, callback){
+function compute(oldSource, callback){
   var tolerant = [];
-  callback(
-    JSON.stringify(
-      esprima.parse(source, {tolerant:tolerant}),
-    null, 4)
-  );
+
+  var AST = esprima.parse(oldSource, {tolerant:tolerant});
   console.log(tolerant);
+
+  AST.body[0].id.name = 'moo';
+
+  var newSource = escodegen.generate(AST);
+  callback(newSource);
 }
