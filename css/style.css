@@ -1,0 +1,26 @@
+#sourceInput, #sourceOutput{
+  position: absolute;
+  width: 40%;
+  height:80%;
+  background-color:lightgray;
+  top:5%;
+  border: 2px dashed gray;
+  overflow:auto;
+}
+
+#sourceInput{
+  left:5%;
+}
+
+#sourceOutput{
+  right:5%;
+  white-space: pre;
+}
+
+#compute{
+  position:absolute;
+  left:0;
+  right:0;
+  margin:auto;
+  bottom:2%;
+}
