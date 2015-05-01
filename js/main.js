@@ -20,7 +20,7 @@ function compute(oldSource, callback){
   var tolerant = [];
 
   var AST = esprima.parse(oldSource, {tolerant:tolerant});
-  AST.body[0].id.name = 'moo';
+  AST = getGoofy(AST);
 
   var newSource = escodegen.generate(AST);
   callback({
@@ -28,4 +28,37 @@ function compute(oldSource, callback){
     AST:JSON.stringify(AST,null, 4),
     errors:JSON.stringify(tolerant,null, 4)
   });
+}
+
+function getGoofy(AST){
+
+  for (var i = 0; i < AST.body.length; i++){
+    var body = AST.body[i];
+    if (body.type === 'FunctionDeclaration'){
+      body.id.name = getWord('V');
+    }
+  }
+
+  return AST;
+}
+
+function getWord(partOfSpeech){
+  //start at random spot in array then wrap around looking
+  var r = Math.floor(Math.random() * __words.length);
+  var i = r;
+  while (i++){
+    var word = __words[i];
+    if (word[1] == partOfSpeech){
+      return word[0];
+    }
+
+    if (i >= __words.length){
+      i = 0;
+    }
+    else {
+      if (i == (r - 1)){
+        return 'nothing'; //End of wrap around loop
+      }
+    }
+  }
 }
