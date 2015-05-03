@@ -34,12 +34,35 @@ function getGoofy(AST){
 
   for (var i = 0; i < AST.body.length; i++){
     var body = AST.body[i];
-    if (body.type === 'FunctionDeclaration'){
-      body.id.name = getWord('V');
-    }
+    goofBody(body);
   }
 
   return AST;
+}
+
+function goofBody(body){
+  if (Array.isArray(body)){
+    for(var i = 0; i < body.length; i++){
+      return goofBody(body[i]);
+    }
+  }
+
+  if (body.type === 'BlockStatement'){
+    return goofBody(body.body);
+  }
+
+  if (body.type === 'FunctionDeclaration'){
+    body.id.name = getWord('V');
+    return goofBody(body.body);
+  }
+
+  if (body.type === 'VariableDeclaration'){
+    for (var i = 0; i < body.declarations.length; i++){
+      body.declarations[i].id.name = getWord('N');
+    }
+
+    return body;
+  }
 }
 
 function getWord(partOfSpeech){
