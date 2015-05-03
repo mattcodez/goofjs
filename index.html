@@ -18,37 +18,68 @@
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
     <body>
-        <!--[if lt IE 7]>
-            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-        <![endif]-->
+      <!--[if lt IE 7]>
+          <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+      <![endif]-->
 
-        <div id="sourceInput" contenteditable></div>
+      <pre id="sourceInput" contenteditable>
+function compute(oldSource, callback){
+  var tolerant = [];
 
-        <button id="sourcePane" data-pane="sourceOutput">Source</button>
-        <button id="ASTPane" data-pane="ASTOutput">AST</button>
-        <button id="errorPane" data-pane="errorOutput">Errors</button>
-        <div id="sourceOutput"></div>
-        <div id="ASTOutput"></div>
-        <div id="errorOutput"></div>
+  var AST = esprima.parse(oldSource, {tolerant:tolerant});
+  AST = getGoofy(AST);
 
-        <button id="compute">Compute</button>
+  function blah(){
+    var meh = 1;
+    moo(tolerant);
+  }
 
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
-        <script src="js/vendor/esprima.js"></script>
-        <script src="js/vendor/escodegen.browser.js"></script>
-		    <script src="data/words.js"></script>
-        <script src="js/plugins.js"></script>
-        <script src="js/main.js"></script>
+  var newSource = escodegen.generate(AST);
+  callback({
+    source:newSource,
+    AST:JSON.stringify(AST,null, 4),
+    errors:JSON.stringify(tolerant,null, 4)
+  });
+}
 
-        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
-        <script>
-            (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
-            function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
-            e=o.createElement(i);r=o.getElementsByTagName(i)[0];
-            e.src='//www.google-analytics.com/analytics.js';
-            r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
-            ga('create','UA-XXXXX-X');ga('send','pageview');
-        </script>
+function getGoofy(AST){
+
+  for (var i = 0; i < AST.body.length; i++){
+    var body = AST.body[i];
+    if (body.type === 'FunctionDeclaration'){
+      body.id.name = getWord('V');
+    }
+  }
+
+  return AST;
+}
+      </pre>
+
+      <button id="sourcePane" data-pane="sourceOutput">Source</button>
+      <button id="ASTPane" data-pane="ASTOutput">AST</button>
+      <button id="errorPane" data-pane="errorOutput">Errors</button>
+      <pre id="sourceOutput"></pre>
+      <pre id="ASTOutput"></pre>
+      <pre id="errorOutput"></pre>
+
+      <button id="compute">Compute</button>
+
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+      <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
+      <script src="js/vendor/esprima.js"></script>
+      <script src="js/vendor/escodegen.browser.js"></script>
+      <script src="data/words.js"></script>
+      <script src="js/plugins.js"></script>
+      <script src="js/main.js"></script>
+
+      <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+      <script>
+          (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+          function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+          e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+          e.src='//www.google-analytics.com/analytics.js';
+          r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+          ga('create','UA-XXXXX-X');ga('send','pageview');
+      </script>
     </body>
 </html>

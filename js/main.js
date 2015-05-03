@@ -19,13 +19,13 @@ paneButtons.on('click', function(e){
 function compute(oldSource, callback){
   var tolerant = [];
 
-  var AST = esprima.parse(oldSource, {tolerant:tolerant});
-  AST = getGoofy(AST);
+  var originalAST = esprima.parse(oldSource, {tolerant:tolerant});
+  var newAST = getGoofy(originalAST);
 
-  var newSource = escodegen.generate(AST);
+  var newSource = escodegen.generate(newAST);
   callback({
     source:newSource,
-    AST:JSON.stringify(AST,null, 4),
+    AST:JSON.stringify(originalAST,null, 4),
     errors:JSON.stringify(tolerant,null, 4)
   });
 }
@@ -34,34 +34,58 @@ function getGoofy(AST){
 
   for (var i = 0; i < AST.body.length; i++){
     var body = AST.body[i];
-    goofBody(body);
+    goofBody(body, function(){});
   }
 
   return AST;
 }
 
-function goofBody(body){
+function goofBody(body, closureMap){
+  var newClosureMap = function(){};
+  newClosureMap.prototype = closureMap;
+  newClosureMap = new newClosureMap();
+
   if (Array.isArray(body)){
     for(var i = 0; i < body.length; i++){
-      return goofBody(body[i]);
+      goofBody(body[i], newClosureMap);
     }
+    return;
   }
 
   if (body.type === 'BlockStatement'){
-    return goofBody(body.body);
+    return goofBody(body.body, newClosureMap);
   }
 
   if (body.type === 'FunctionDeclaration'){
     body.id.name = getWord('V');
-    return goofBody(body.body);
+    return goofBody(body.body, newClosureMap);
   }
 
   if (body.type === 'VariableDeclaration'){
     for (var i = 0; i < body.declarations.length; i++){
-      body.declarations[i].id.name = getWord('N');
+      var variable = body.declarations[i];
+      var newVariableName = getWord('N');
+      newClosureMap[variable.id.name] = newVariableName;
+      variable.id.name = newVariableName;
     }
 
     return body;
+  }
+
+  if (body.type === 'ExpressionStatement'){
+    var arguments =
+      (body.expression.right || body.expression).arguments;
+    for (var i = 0; i < arguments.length; i++){
+      var variable = arguments[i];
+      var variableId = variable.id || variable;
+      if (newClosureMap[variableId.name]){
+        variable.name = newClosureMap[variableId.name];
+      }
+      else {
+        newClosureMap[variableId.name] = newVariableName;
+        variableId.name = newVariableName;
+      }
+    }
   }
 }
 

@@ -9,6 +9,7 @@
   top:5%;
   border: 2px dashed gray;
   overflow:auto;
+  overflow-wrap: normal;
 }
 
 #sourceInput{
