@@ -78,10 +78,12 @@ function goofBody(body, closureMap){
     for (var i = 0; i < arguments.length; i++){
       var variable = arguments[i];
       var variableId = variable.id || variable;
+      //FIXME: Mapping doesn't work because newClosureMap is never sent to a deeper call
       if (newClosureMap[variableId.name]){
         variable.name = newClosureMap[variableId.name];
       }
       else {
+        var newVariableName = getWord('N');
         newClosureMap[variableId.name] = newVariableName;
         variableId.name = newVariableName;
       }
