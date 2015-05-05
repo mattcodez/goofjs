@@ -40,12 +40,18 @@ function getGoofy(AST){
   return AST;
 }
 
-function goofBody(body, closureMap){
+function getNewClosureMap(cm){
   var newClosureMap = function(){};
-  newClosureMap.prototype = closureMap;
+  newClosureMap.prototype = cm;
   newClosureMap = new newClosureMap();
+  return newClosureMap;
+}
 
+function goofBody(body, closureMap){
   if (Array.isArray(body)){
+    //Body items need to share a closure map
+    var newClosureMap = getNewClosureMap(closureMap);
+
     for(var i = 0; i < body.length; i++){
       goofBody(body[i], newClosureMap);
     }
@@ -53,19 +59,19 @@ function goofBody(body, closureMap){
   }
 
   if (body.type === 'BlockStatement'){
-    return goofBody(body.body, newClosureMap);
+    return goofBody(body.body, getNewClosureMap(closureMap));
   }
 
   if (body.type === 'FunctionDeclaration'){
     body.id.name = getWord('V');
-    return goofBody(body.body, newClosureMap);
+    return goofBody(body.body, getNewClosureMap(closureMap));
   }
 
   if (body.type === 'VariableDeclaration'){
     for (var i = 0; i < body.declarations.length; i++){
       var variable = body.declarations[i];
       var newVariableName = getWord('N');
-      newClosureMap[variable.id.name] = newVariableName;
+      closureMap[variable.id.name] = newVariableName;
       variable.id.name = newVariableName;
     }
 
@@ -78,13 +84,12 @@ function goofBody(body, closureMap){
     for (var i = 0; i < arguments.length; i++){
       var variable = arguments[i];
       var variableId = variable.id || variable;
-      //FIXME: Mapping doesn't work because newClosureMap is never sent to a deeper call
-      if (newClosureMap[variableId.name]){
-        variable.name = newClosureMap[variableId.name];
+      if (closureMap[variableId.name]){
+        variable.name = closureMap[variableId.name];
       }
       else {
         var newVariableName = getWord('N');
-        newClosureMap[variableId.name] = newVariableName;
+        closureMap[variableId.name] = newVariableName;
         variableId.name = newVariableName;
       }
     }
