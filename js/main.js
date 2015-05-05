@@ -20,7 +20,7 @@ function compute(oldSource, callback){
   var tolerant = [];
 
   var originalAST = esprima.parse(oldSource, {tolerant:tolerant});
-  var newAST = getGoofy(originalAST);
+  var newAST = getGoofy(_.clone(originalAST, true));
 
   var newSource = escodegen.generate(newAST);
   callback({
