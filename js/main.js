@@ -20,9 +20,14 @@ function compute(oldSource, callback){
   var tolerant = [];
 
   var originalAST = esprima.parse(oldSource, {tolerant:tolerant});
-  var newAST = getGoofy(_.clone(originalAST, true));
+  try {
+    var newAST = getGoofy(_.clone(originalAST, true));
+    var newSource = escodegen.generate(newAST);
+  }
+  catch(e){
+    console.log(e.stack);
+  }
 
-  var newSource = escodegen.generate(newAST);
   callback({
     source:newSource,
     AST:JSON.stringify(originalAST,null, 4),
@@ -40,7 +45,7 @@ function getGoofy(AST){
   return AST;
 }
 
-function getNewClosureMap(cm){
+function addClosureLevel(cm){
   var newClosureMap = function(){};
   newClosureMap.prototype = cm;
   newClosureMap = new newClosureMap();
@@ -50,7 +55,7 @@ function getNewClosureMap(cm){
 function goofBody(body, closureMap){
   if (Array.isArray(body)){
     //Body items need to share a closure map
-    var newClosureMap = getNewClosureMap(closureMap);
+    var newClosureMap = addClosureLevel(closureMap);
 
     for(var i = 0; i < body.length; i++){
       goofBody(body[i], newClosureMap);
@@ -59,12 +64,12 @@ function goofBody(body, closureMap){
   }
 
   if (body.type === 'BlockStatement'){
-    return goofBody(body.body, getNewClosureMap(closureMap));
+    return goofBody(body.body, addClosureLevel(closureMap));
   }
 
   if (body.type === 'FunctionDeclaration'){
     body.id.name = getWord('V');
-    return goofBody(body.body, getNewClosureMap(closureMap));
+    return goofBody(body.body, addClosureLevel(closureMap));
   }
 
   if (body.type === 'VariableDeclaration'){
@@ -73,6 +78,32 @@ function goofBody(body, closureMap){
       var newVariableName = getWord('N');
       closureMap[variable.id.name] = newVariableName;
       variable.id.name = newVariableName;
+
+      if (variable.init.arguments){
+        var args = variable.init.arguments;
+        for (var j = 0; j < args.length; j++){
+          var arg = args[j];
+
+          switch(arg.type){
+            case 'Identifier':
+              if (closureMap[arg.name]){
+                arg.name = closureMap[arg.name];
+              } //No else here, if we can't find it, must be a global
+            break;
+
+            case 'ObjectExpression':
+              for (var k = 0; k < arg.properties.length; k++){
+                var prop = arg.properties[k];
+                if (prop.value.type === 'Identifier'){
+                  if (closureMap[prop.value.name]){
+                    prop.value.name = closureMap[prop.value.name];
+                  }
+                }
+              }
+            break;
+          }
+        }
+      }
     }
 
     return body;
@@ -84,10 +115,12 @@ function goofBody(body, closureMap){
     for (var i = 0; i < arguments.length; i++){
       var variable = arguments[i];
       var variableId = variable.id || variable;
+
+      // If we find the variable name in the scope, change to the new name
       if (closureMap[variableId.name]){
         variable.name = closureMap[variableId.name];
       }
-      else {
+      else { //Otherwise, set a new name
         var newVariableName = getWord('N');
         closureMap[variableId.name] = newVariableName;
         variableId.name = newVariableName;
