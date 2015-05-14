@@ -68,7 +68,17 @@ function goofBody(body, closureMap){
   }
 
   if (body.type === 'FunctionDeclaration'){
+    //Change function name
     body.id.name = getWord('V');
+
+    //add function params as variables to closuremap
+    for (var i = 0; i < body.params.length; i++){
+      var param = body.params[i];
+      var newVariableName = getWord('N');
+      closureMap[param.name] = newVariableName;
+      param.name = newVariableName;
+    }
+
     return goofBody(body.body, addClosureLevel(closureMap));
   }
 
@@ -76,7 +86,9 @@ function goofBody(body, closureMap){
     for (var i = 0; i < body.declarations.length; i++){
       var variable = body.declarations[i];
       var newVariableName = getWord('N');
+      //map old name to new name
       closureMap[variable.id.name] = newVariableName;
+      //change name in AST
       variable.id.name = newVariableName;
 
       if (variable.init.arguments){
